@@ -1,0 +1,6 @@
+{
+  "name": "Invoice Flex",
+  "description": "Invoice Flex - Smart GST & Non-GST Billing, Dynamic Content Feed, E-Way Bill & IRN, Multi-Theme Invoices, Accounting, WhatsApp Marketing & Store",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
