@@ -178,7 +178,11 @@ fun AuthGate(authViewModel: AuthViewModel = viewModel()) {
         }
 
         SessionStatus.NEEDS_SETUP -> {
+            val billingViewModel: BillingViewModel = viewModel()
+            val billingState by billingViewModel.uiState.collectAsStateWithLifecycle()
             OnboardingWizardScreen(
+                state = billingState,
+                viewModel = billingViewModel,
                 authViewModel = authViewModel,
                 onFinish = { /* sessionStatus flips to READY automatically */ }
             )
@@ -423,6 +427,9 @@ fun InvoiceFlexApp(
                         onNavigateToSetupWizard = {
                             currentScreen = AppScreen.OnboardingWizard
                         },
+                        onNavigateToLegal = { tab ->
+                            currentScreen = AppScreen.LegalCompliance(tab)
+                        },
                         onLogout = onLogout
                     )
                 }
@@ -471,6 +478,8 @@ fun InvoiceFlexApp(
                         currentScreen = AppScreen.Home
                     }
                     OnboardingWizardScreen(
+                        state = state,
+                        viewModel = viewModel,
                         authViewModel = authViewModel,
                         onFinish = { currentScreen = AppScreen.Home }
                     )
@@ -626,6 +635,17 @@ fun InvoiceFlexApp(
                         onNavigateToPos = {
                             currentScreen = AppScreen.PosBilling
                         }
+                    )
+                }
+
+                is AppScreen.LegalCompliance -> {
+                    val complianceTab = (currentScreen as AppScreen.LegalCompliance).tab
+                    BackHandler {
+                        currentScreen = AppScreen.More
+                    }
+                    com.example.ui.screens.LegalComplianceScreen(
+                        initialTab = complianceTab,
+                        onNavigateBack = { currentScreen = AppScreen.More }
                     )
                 }
             }

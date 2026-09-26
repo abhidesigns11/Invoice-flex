@@ -21,8 +21,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.HelpOutline
@@ -74,7 +76,9 @@ fun MoreScreen(
     onNavigateToInvoiceSettings: () -> Unit = {},
     onNavigateToAccountSettings: () -> Unit = {},
     onNavigateToHsnFinder: () -> Unit = {},
-    onNavigateToSetupWizard: () -> Unit = {}
+    onNavigateToSetupWizard: () -> Unit = {},
+    onNavigateToLegal: (LegalTab) -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val businessName = state.profile?.businessName ?: "Apex Stainless Steel"
@@ -303,6 +307,12 @@ fun MoreScreen(
                             onClick = onNavigateToHsnFinder
                         )
                         MoreNavRow(
+                            icon = Icons.Default.Policy,
+                            iconTint = Color(0xFF0D9488),
+                            title = "Legal, Privacy & Compliance",
+                            onClick = { onNavigateToLegal(LegalTab.PRIVACY) }
+                        )
+                        MoreNavRow(
                             icon = Icons.Default.Print,
                             iconTint = Color(0xFF475569),
                             title = "Buy Thermal & Barcode Printer",
@@ -313,6 +323,12 @@ fun MoreScreen(
                             iconTint = Color(0xFFF59E0B),
                             title = "Rate app on Play Store",
                             onClick = { Toast.makeText(context, "Thank you for rating Invoice Flex 5 Stars!", Toast.LENGTH_SHORT).show() }
+                        )
+                        MoreNavRow(
+                            icon = Icons.AutoMirrored.Filled.ExitToApp,
+                            iconTint = Color(0xFFDC2626),
+                            title = "Sign Out",
+                            onClick = onLogout
                         )
                     }
                 }

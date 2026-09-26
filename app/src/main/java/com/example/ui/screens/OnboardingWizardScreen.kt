@@ -69,19 +69,22 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.BusinessProfile
+import com.example.data.model.UserProfile
 import com.example.ui.components.InvoiceFlexLogo
 import com.example.ui.components.QrCodeGenerator
 import com.example.ui.theme.PrimaryCobalt
 import com.example.ui.theme.PureWhite
 import com.example.ui.theme.TextSecondary
+import com.example.ui.viewmodel.AuthViewModel
 import com.example.ui.viewmodel.BillingUiState
 import com.example.ui.viewmodel.BillingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingWizardScreen(
-    state: BillingUiState,
-    viewModel: BillingViewModel,
+    state: BillingUiState = BillingUiState(),
+    viewModel: BillingViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    authViewModel: AuthViewModel? = null,
     onFinish: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -189,6 +192,31 @@ fun OnboardingWizardScreen(
                                     isGstEnabled = isGstRegistered
                                 )
                                 viewModel.saveBusinessProfile(updated)
+
+                                if (authViewModel != null) {
+                                    val userProfile = UserProfile(
+                                        ownerName = ownerName,
+                                        gender = selectedGender,
+                                        companyName = companyName.ifEmpty { "Apex Stainless Steel & Engineering Works" },
+                                        phone = userPhone,
+                                        email = userEmail,
+                                        address = address,
+                                        city = city,
+                                        state = stateName,
+                                        pincode = pincode,
+                                        gstin = if (isGstRegistered) gstin else "",
+                                        isGstEnabled = isGstRegistered,
+                                        bankName = bankName,
+                                        accountHolderName = accountHolder,
+                                        accountNumber = accountNumber,
+                                        ifscCode = ifscCode,
+                                        branch = branch,
+                                        upiId = upiId,
+                                        onboardingComplete = true
+                                    )
+                                    authViewModel.completeOnboarding(userProfile, logoUri = null)
+                                }
+
                                 Toast.makeText(context, "Welcome to Invoice Flex! Profile configured successfully.", Toast.LENGTH_LONG).show()
                                 onFinish()
                             }
