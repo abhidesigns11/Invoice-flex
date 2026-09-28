@@ -1,6 +1,11 @@
 package com.example.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,12 +25,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.layout.ContentScale
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.example.ui.viewmodel.AuthViewModel
+import com.example.ui.theme.OutlineHairline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -75,12 +88,18 @@ import com.example.ui.viewmodel.BillingViewModel
 fun SettingsProfileScreen(
     state: BillingUiState,
     viewModel: BillingViewModel,
+    authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToHsnFinder: () -> Unit = {},
     onNavigateToReports: () -> Unit = {},
     onNavigateToPos: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Business Profile, 1: GST Calculator, 2: Bank & UPI
+
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+    val logoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) authViewModel.updateLogo(uri)
+    }
 
     val profile = state.profile ?: BusinessProfile()
 
@@ -241,6 +260,55 @@ fun SettingsProfileScreen(
                             }
                         }
 
+                        // Company Logo
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .border(1.dp, OutlineHairline, RoundedCornerShape(16.dp))
+                                            .clickable { logoPicker.launch("image/*") },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val logoUrl = authState.profile?.logoUrl.orEmpty()
+                                        if (logoUrl.isNotBlank()) {
+                                            AsyncImage(
+                                                model = logoUrl,
+                                                contentDescription = "Company logo",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Icon(Icons.Default.AddAPhoto, contentDescription = "Add logo", tint = PrimaryBlue)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Company Logo", fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = "Shown on your invoices and in the app",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = { logoPicker.launch("image/*") }) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Change logo", tint = PrimaryBlue)
+                                    }
+                                }
+                            }
+                        }
+
                         // Business Info Form
                         item {
                             Card(
@@ -291,7 +359,7 @@ fun SettingsProfileScreen(
                                     OutlinedTextField(
                                         value = gstin,
                                         onValueChange = { gstin = it },
-                                        label = { Text("GSTIN (GST Identification Number)") },
+                                        label = { Text("GSTIN") },
                                         modifier = Modifier.fillMaxWidth().testTag("input_biz_gstin"),
                                         singleLine = true
                                     )

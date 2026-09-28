@@ -20,11 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,15 +60,15 @@ fun InvoiceFlexLogo(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = IfNavyDark,
-                        fontSize = (size.value * 0.44f).sp
+                        fontSize = (size.value * 0.42f).sp
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Flex",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = IfBluePrimary,
-                        fontSize = (size.value * 0.44f).sp
+                        fontSize = (size.value * 0.42f).sp
                     )
                 }
                 if (subtitle != null) {
@@ -79,7 +76,7 @@ fun InvoiceFlexLogo(
                         text = subtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF64748B),
-                        fontSize = (size.value * 0.22f).coerceAtLeast(9f).sp,
+                        fontSize = (size.value * 0.22f).sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -89,29 +86,21 @@ fun InvoiceFlexLogo(
 }
 
 @Composable
-fun InvoiceFlexIcon(
-    modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(20)
-) {
+fun InvoiceFlexIcon(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier
-            .shadow(elevation = 2.dp, shape = shape, spotColor = Color(0xFF0066FF).copy(alpha = 0.15f)),
-        shape = shape,
-        color = Color.White
+        modifier = modifier,
+        shape = RoundedCornerShape(22),
+        color = IfSurfaceWhite,
+        shadowElevation = 2.dp
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.logo_invoice_flex),
+            contentDescription = "Invoice Flex logo",
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_invoice_flex),
-                contentDescription = "Invoice Flex Logo",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+                .padding(4.dp),
+            contentScale = ContentScale.Fit
+        )
     }
 }
 
@@ -134,21 +123,16 @@ fun InvoiceFlexHeroBadge(
                         colors = listOf(IfNavyDark, Color(0xFF0F3A66))
                     )
                 )
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(Color.White, CircleShape)
-                    .padding(3.dp),
+                    .size(54.dp)
+                    .background(Color.White.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                InvoiceFlexIcon(
-                    modifier = Modifier.size(44.dp),
-                    shape = CircleShape
-                )
+                InvoiceFlexIcon(modifier = Modifier.size(38.dp))
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -169,9 +153,7 @@ fun InvoiceFlexHeroBadge(
                             color = Color(0xFF34D399),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .background(Color.Transparent)
-                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                            modifier = Modifier.background(Color.Transparent)
                         )
                     }
                 }

@@ -118,6 +118,28 @@ class AuthViewModel(
         }
     }
 
+    /** Updates just the logo on the existing profile — used from Settings, outside the wizard. */
+    fun updateLogo(logoUri: Uri) {
+        val uid = _uiState.value.uid ?: return
+        val currentProfile = _uiState.value.profile ?: return
+        _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
+        viewModelScope.launch {
+            val uploadResult = profileRepository.uploadLogo(uid, logoUri)
+            uploadResult.onFailure { e ->
+                _uiState.update { it.copy(isSubmitting = false, errorMessage = "Logo upload failed: ${e.message}") }
+            }
+            uploadResult.onSuccess { url ->
+                val updated = currentProfile.copy(logoUrl = url)
+                val saveResult = profileRepository.saveProfile(updated)
+                saveResult.onSuccess {
+                    _uiState.update { it.copy(isSubmitting = false, profile = updated) }
+                }.onFailure { e ->
+                    _uiState.update { it.copy(isSubmitting = false, errorMessage = e.message) }
+                }
+            }
+        }
+    }
+
     fun logout() {
         authRepository.signOut()
     }

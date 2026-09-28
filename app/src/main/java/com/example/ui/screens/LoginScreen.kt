@@ -59,8 +59,7 @@ fun LoginScreen(
     onLogin: (String, String) -> Unit,
     onForgotPassword: (String) -> Unit,
     onNavigateToSignUp: () -> Unit,
-    onMessageShown: () -> Unit,
-    onOpenLegal: (LegalTab) -> Unit = {}
+    onMessageShown: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

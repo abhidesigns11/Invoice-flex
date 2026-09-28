@@ -29,7 +29,10 @@ data class BusinessProfile(
     val estimatePrefix: String = "EST-2026-",
     val posPrefix: String = "POS-2026-",
     val isGstEnabled: Boolean = true
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(id = 1)
+}
 
 @Entity(
     tableName = "parties",
@@ -51,7 +54,10 @@ data class Party(
     val creditLimit: Double = 50000.0,
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis()
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(name = "", phone = "")
+}
 
 @Entity(
     tableName = "items",
@@ -74,7 +80,10 @@ data class Item(
     val isService: Boolean = false,
     val description: String = "",
     val createdAt: Long = System.currentTimeMillis()
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(name = "")
+}
 
 @Entity(
     tableName = "invoices",
@@ -112,7 +121,10 @@ data class Invoice(
     val hasPaymentReminder: Boolean = false,
     val reminderDate: Long? = null,
     val createdAt: Long = System.currentTimeMillis()
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(invoiceNumber = "")
+}
 
 @Entity(
     tableName = "invoice_items",
@@ -139,7 +151,10 @@ data class InvoiceItem(
     val taxAmount: Double = 0.0,
     val discountPercent: Double = 0.0,
     val totalAmount: Double = 0.0
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(itemName = "")
+}
 
 @Entity(
     tableName = "payment_transactions",
@@ -158,7 +173,10 @@ data class PaymentTransaction(
     val referenceNo: String = "",
     val notes: String = "",
     val expenseCategory: ExpenseCategory? = null
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(id = 0)
+}
 
 @Entity(
     tableName = "stock_transactions",
@@ -174,7 +192,10 @@ data class StockTransaction(
     val referenceInvoiceNumber: String = "",
     val date: Long = System.currentTimeMillis(),
     val notes: String = ""
-)
+) {
+    // No-arg constructor required for Firestore's automatic deserialization.
+    constructor() : this(itemId = 0, itemName = "", type = StockTransactionType.STOCK_IN, quantity = 0.0)
+}
 
 data class AppointmentTask(
     val id: String = java.util.UUID.randomUUID().toString(),

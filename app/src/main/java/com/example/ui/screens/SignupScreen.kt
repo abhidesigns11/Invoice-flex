@@ -55,8 +55,7 @@ import com.example.ui.viewmodel.AuthUiState
 fun SignupScreen(
     uiState: AuthUiState,
     onSignUp: (String, String, String) -> Unit,
-    onNavigateToLogin: () -> Unit,
-    onOpenLegal: (LegalTab) -> Unit = {}
+    onNavigateToLogin: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

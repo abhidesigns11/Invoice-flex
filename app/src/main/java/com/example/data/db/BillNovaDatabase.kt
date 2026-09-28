@@ -57,23 +57,10 @@ abstract class BillNovaDatabase : RoomDatabase() {
         ) : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        populateInitialData(database.billNovaDao())
-                    }
-                }
-            }
-
-            private suspend fun populateInitialData(dao: BillNovaDao) {
-                dao.insertOrUpdateProfile(SampleDataGenerator.defaultProfile)
-                SampleDataGenerator.sampleParties.forEach { dao.insertParty(it) }
-                SampleDataGenerator.sampleItems.forEach { dao.insertItem(it) }
-                SampleDataGenerator.getSampleInvoices().forEach { (invoice, items) ->
-                    val invId = dao.insertInvoice(invoice)
-                    val updatedItems = items.map { it.copy(invoiceId = invId) }
-                    dao.insertInvoiceItems(updatedItems)
-                }
-                SampleDataGenerator.sampleExpenses.forEach { dao.insertTransaction(it) }
+                // Each account now sets up its own business profile through the
+                // onboarding wizard (saved to Firestore), so the database no longer
+                // pre-fills dummy demo data on first run. SampleDataGenerator is kept
+                // around in case a future "load demo data" option is added.
             }
         }
     }

@@ -54,7 +54,13 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Most screens in this app use fixed light colors (PureWhite, CanvasBg, etc.)
+    // rather than reading from MaterialTheme, so letting the app follow the
+    // device's system dark mode made a handful of screens (like Business
+    // Settings) turn dark while everything else stayed light — the
+    // inconsistent/black-and-white look. Always using the light scheme keeps
+    // every screen visually consistent until the whole app is made dark-mode aware.
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

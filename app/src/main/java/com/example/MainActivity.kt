@@ -94,7 +94,6 @@ sealed class AppScreen {
     object ThemeColor : AppScreen()
     object CustomThemeBuilder : AppScreen()
     object InvoiceSettings : AppScreen()
-    data class LegalCompliance(val tab: com.example.ui.screens.LegalTab = com.example.ui.screens.LegalTab.PRIVACY) : AppScreen()
 }
 
 enum class MainNavTab(val title: String, val icon: ImageVector, val testTag: String) {
@@ -126,16 +125,6 @@ class MainActivity : ComponentActivity() {
 fun AuthGate(authViewModel: AuthViewModel = viewModel()) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     var showSignUp by remember { mutableStateOf(false) }
-    var unauthLegalTab by remember { mutableStateOf<com.example.ui.screens.LegalTab?>(null) }
-
-    if (unauthLegalTab != null) {
-        BackHandler { unauthLegalTab = null }
-        com.example.ui.screens.LegalComplianceScreen(
-            initialTab = unauthLegalTab!!,
-            onNavigateBack = { unauthLegalTab = null }
-        )
-        return
-    }
 
     when (authState.sessionStatus) {
         SessionStatus.CHECKING -> {
@@ -159,8 +148,7 @@ fun AuthGate(authViewModel: AuthViewModel = viewModel()) {
                     onNavigateToLogin = {
                         authViewModel.clearMessages()
                         showSignUp = false
-                    },
-                    onOpenLegal = { tab -> unauthLegalTab = tab }
+                    }
                 )
             } else {
                 LoginScreen(
@@ -171,18 +159,13 @@ fun AuthGate(authViewModel: AuthViewModel = viewModel()) {
                         authViewModel.clearMessages()
                         showSignUp = true
                     },
-                    onMessageShown = { authViewModel.clearMessages() },
-                    onOpenLegal = { tab -> unauthLegalTab = tab }
+                    onMessageShown = { authViewModel.clearMessages() }
                 )
             }
         }
 
         SessionStatus.NEEDS_SETUP -> {
-            val billingViewModel: BillingViewModel = viewModel()
-            val billingState by billingViewModel.uiState.collectAsStateWithLifecycle()
             OnboardingWizardScreen(
-                state = billingState,
-                viewModel = billingViewModel,
                 authViewModel = authViewModel,
                 onFinish = { /* sessionStatus flips to READY automatically */ }
             )
@@ -236,6 +219,13 @@ fun InvoiceFlexApp(
 
     var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
     var selectedNavTab by remember { mutableStateOf(MainNavTab.DASHBOARD) }
+
+    // Always reset the bottom-nav highlight together with the screen itself,
+    // so going back never leaves the wrong tab looking selected.
+    fun goHome() {
+        selectedNavTab = MainNavTab.DASHBOARD
+        currentScreen = AppScreen.Home
+    }
 
     var showQuickAddPartyDialog by remember { mutableStateOf(false) }
     var showQuickAddItemDialog by remember { mutableStateOf(false) }
@@ -356,7 +346,7 @@ fun InvoiceFlexApp(
                 is AppScreen.Parties -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     PartiesScreen(
                         state = state,
@@ -378,14 +368,14 @@ fun InvoiceFlexApp(
                 is AppScreen.Inventory -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     InventoryScreen(
                         state = state,
                         viewModel = viewModel,
                         onNavigateBack = {
                             selectedNavTab = MainNavTab.DASHBOARD
-                            currentScreen = AppScreen.Home
+                            goHome()
                         },
                         onNavigateToHsnFinder = {
                             currentScreen = AppScreen.HsnFinder
@@ -396,7 +386,7 @@ fun InvoiceFlexApp(
                 is AppScreen.ForYou -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     ForYouScreen(
                         state = state,
@@ -410,7 +400,7 @@ fun InvoiceFlexApp(
                 is AppScreen.More -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     MoreScreen(
                         state = state,
@@ -426,9 +416,6 @@ fun InvoiceFlexApp(
                         },
                         onNavigateToSetupWizard = {
                             currentScreen = AppScreen.OnboardingWizard
-                        },
-                        onNavigateToLegal = { tab ->
-                            currentScreen = AppScreen.LegalCompliance(tab)
                         },
                         onLogout = onLogout
                     )
@@ -475,20 +462,18 @@ fun InvoiceFlexApp(
 
                 is AppScreen.OnboardingWizard -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     OnboardingWizardScreen(
-                        state = state,
-                        viewModel = viewModel,
                         authViewModel = authViewModel,
-                        onFinish = { currentScreen = AppScreen.Home }
+                        onFinish = { goHome() }
                     )
                 }
 
                 is AppScreen.Invoices -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     InvoicesListScreen(
                         state = state,
@@ -506,12 +491,12 @@ fun InvoiceFlexApp(
                 is AppScreen.EWayIrn -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     EWayIrnScreen(
                         onNavigateBack = {
                             selectedNavTab = MainNavTab.DASHBOARD
-                            currentScreen = AppScreen.Home
+                            goHome()
                         },
                         onNavigateToInvoiceDetail = { invId ->
                             viewModel.selectInvoiceById(invId)
@@ -523,12 +508,12 @@ fun InvoiceFlexApp(
                 is AppScreen.HsnFinder -> {
                     BackHandler {
                         selectedNavTab = MainNavTab.DASHBOARD
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     HsnFinderScreen(
                         onNavigateBack = {
                             selectedNavTab = MainNavTab.DASHBOARD
-                            currentScreen = AppScreen.Home
+                            goHome()
                         },
                         onSelectHsnForNewItem = { hsnRec ->
                             viewModel.initNewInvoiceDraft(InvoiceType.SALE_INVOICE)
@@ -549,12 +534,12 @@ fun InvoiceFlexApp(
 
                 is AppScreen.CreateInvoice -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     CreateEditInvoiceScreen(
                         state = state,
                         viewModel = viewModel,
-                        onNavigateBack = { currentScreen = AppScreen.Home },
+                        onNavigateBack = { goHome() },
                         onInvoiceSaved = { newId ->
                             currentScreen = AppScreen.InvoiceDetail
                         }
@@ -563,25 +548,25 @@ fun InvoiceFlexApp(
 
                 is AppScreen.InvoiceDetail -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     InvoiceDetailPreviewScreen(
                         state = state,
                         viewModel = viewModel,
                         onNavigateBack = {
-                            currentScreen = AppScreen.Home
+                            goHome()
                         }
                     )
                 }
 
                 is AppScreen.PosBilling -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     PosBillingScreen(
                         state = state,
                         viewModel = viewModel,
-                        onNavigateBack = { currentScreen = AppScreen.Home },
+                        onNavigateBack = { goHome() },
                         onCheckoutSuccess = { newId ->
                             currentScreen = AppScreen.InvoiceDetail
                         }
@@ -608,7 +593,7 @@ fun InvoiceFlexApp(
 
                 is AppScreen.Reports -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     ReportsScreen(
                         state = state,
@@ -618,13 +603,14 @@ fun InvoiceFlexApp(
 
                 is AppScreen.Settings -> {
                     BackHandler {
-                        currentScreen = AppScreen.Home
+                        goHome()
                     }
                     SettingsProfileScreen(
                         state = state,
                         viewModel = viewModel,
+                        authViewModel = authViewModel,
                         onNavigateBack = {
-                            currentScreen = AppScreen.Home
+                            goHome()
                         },
                         onNavigateToHsnFinder = {
                             currentScreen = AppScreen.HsnFinder
@@ -635,17 +621,6 @@ fun InvoiceFlexApp(
                         onNavigateToPos = {
                             currentScreen = AppScreen.PosBilling
                         }
-                    )
-                }
-
-                is AppScreen.LegalCompliance -> {
-                    val complianceTab = (currentScreen as AppScreen.LegalCompliance).tab
-                    BackHandler {
-                        currentScreen = AppScreen.More
-                    }
-                    com.example.ui.screens.LegalComplianceScreen(
-                        initialTab = complianceTab,
-                        onNavigateBack = { currentScreen = AppScreen.More }
                     )
                 }
             }

@@ -21,10 +21,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.HelpOutline
@@ -77,7 +76,6 @@ fun MoreScreen(
     onNavigateToAccountSettings: () -> Unit = {},
     onNavigateToHsnFinder: () -> Unit = {},
     onNavigateToSetupWizard: () -> Unit = {},
-    onNavigateToLegal: (LegalTab) -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -272,16 +270,16 @@ fun MoreScreen(
                             onClick = { Toast.makeText(context, "Payment reminders set for 3 days before due date", Toast.LENGTH_SHORT).show() }
                         )
                         MoreNavRow(
-                            icon = Icons.Default.ManageAccounts,
-                            iconTint = Color(0xFF7C3AED),
-                            title = "Manage User / Multi-User Switch",
-                            onClick = { onNavigateToSetupWizard() }
-                        )
-                        MoreNavRow(
                             icon = Icons.Default.Delete,
                             iconTint = Color(0xFFEF4444),
                             title = "Recover Deleted Invoices",
                             onClick = { Toast.makeText(context, "No deleted invoices found in recycle bin", Toast.LENGTH_SHORT).show() }
+                        )
+                        MoreNavRow(
+                            icon = Icons.AutoMirrored.Filled.Logout,
+                            iconTint = Color(0xFFEF4444),
+                            title = "Log Out",
+                            onClick = onLogout
                         )
                     }
                 }
@@ -307,12 +305,6 @@ fun MoreScreen(
                             onClick = onNavigateToHsnFinder
                         )
                         MoreNavRow(
-                            icon = Icons.Default.Policy,
-                            iconTint = Color(0xFF0D9488),
-                            title = "Legal, Privacy & Compliance",
-                            onClick = { onNavigateToLegal(LegalTab.PRIVACY) }
-                        )
-                        MoreNavRow(
                             icon = Icons.Default.Print,
                             iconTint = Color(0xFF475569),
                             title = "Buy Thermal & Barcode Printer",
@@ -323,12 +315,6 @@ fun MoreScreen(
                             iconTint = Color(0xFFF59E0B),
                             title = "Rate app on Play Store",
                             onClick = { Toast.makeText(context, "Thank you for rating Invoice Flex 5 Stars!", Toast.LENGTH_SHORT).show() }
-                        )
-                        MoreNavRow(
-                            icon = Icons.AutoMirrored.Filled.ExitToApp,
-                            iconTint = Color(0xFFDC2626),
-                            title = "Sign Out",
-                            onClick = onLogout
                         )
                     }
                 }

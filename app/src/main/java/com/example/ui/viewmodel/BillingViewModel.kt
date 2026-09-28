@@ -1,9 +1,9 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.db.BillNovaDatabase
 import com.example.data.model.BusinessProfile
 import com.example.data.model.ExpenseCategory
 import com.example.data.model.Invoice
@@ -18,6 +18,8 @@ import com.example.data.model.PaymentStatus
 import com.example.data.model.PaymentTransaction
 import com.example.data.model.StockTransactionType
 import com.example.data.repository.BillingRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,12 +32,18 @@ import kotlinx.coroutines.launch
 
 class BillingViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: BillingRepository
+    // Firestore-backed now — this account's business data lives under
+    // users/{uid}/... and follows them to any device they log into.
+    private val repository: BillingRepository = BillingRepository()
 
-    init {
-        val database = BillNovaDatabase.getDatabase(application, viewModelScope)
-        repository = BillingRepository(database.billNovaDao())
+    // Any Firestore/network failure is reported to the user instead of crashing the app.
+    private val errorHandler = CoroutineExceptionHandler { _, e ->
+        Log.e("BillingViewModel", "Background task failed", e)
+        _uiState.update { it.copy(userMessage = "Couldn't sync: ${e.message ?: "unknown error"}") }
     }
+
+    private fun safeLaunch(block: suspend CoroutineScope.() -> Unit) =
+        viewModelScope.launch(errorHandler, block = block)
 
     private val _uiState = MutableStateFlow(BillingUiState())
     val uiState: StateFlow<BillingUiState> = _uiState.asStateFlow()
@@ -45,25 +53,25 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun observeData() {
-        viewModelScope.launch {
+        safeLaunch {
             repository.businessProfile.collect { prof ->
                 _uiState.update { it.copy(profile = prof) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allInvoices.collect { invs ->
                 _uiState.update { it.copy(allInvoices = invs) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allParties.collect { parties ->
                 _uiState.update { it.copy(allParties = parties) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allItems.collect { items ->
                 val lowStock = items.filter { !it.isService && it.currentStock <= it.minStockAlert }
                 val cats = items.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
@@ -77,49 +85,49 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allTransactions.collect { txs ->
                 _uiState.update { it.copy(transactions = txs) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allExpenses.collect { exps ->
                 _uiState.update { it.copy(expenses = exps) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.allStockTransactions.collect { st ->
                 _uiState.update { it.copy(stockTransactions = st) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.totalReceivables.collect { rec ->
                 _uiState.update { it.copy(totalReceivables = rec ?: 0.0) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.totalPayables.collect { pay ->
                 _uiState.update { it.copy(totalPayables = pay ?: 0.0) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.getTodaySales().collect { today ->
                 _uiState.update { it.copy(todaySales = today ?: 0.0) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.totalSales.collect { sales ->
                 _uiState.update { it.copy(totalSales = sales ?: 0.0) }
             }
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             repository.totalPurchases.collect { purchases ->
                 _uiState.update { it.copy(totalPurchases = purchases ?: 0.0) }
             }
@@ -137,7 +145,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Invoice Creation & Draft Management ---
     fun initNewInvoiceDraft(type: InvoiceType) {
-        viewModelScope.launch {
+        safeLaunch {
             val nextNumber = repository.generateNextInvoiceNumber(type)
             val profile = _uiState.value.profile
             _uiState.update {
@@ -278,7 +286,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             val invoice = Invoice(
                 invoiceNumber = draft.invoiceNumber.ifBlank { "INV-${System.currentTimeMillis()}" },
                 invoiceType = draft.invoiceType,
@@ -379,7 +387,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
-        viewModelScope.launch {
+        safeLaunch {
             val nextNumber = repository.generateNextInvoiceNumber(InvoiceType.POS_BILL)
             val subTotal = cart.sumOf { it.quantity * it.customPrice * (1 - it.discountPercent / 100.0) }
             val totalTax = cart.sumOf { (it.quantity * it.customPrice * (1 - it.discountPercent / 100.0)) * (it.item.taxRate / 100.0) }
@@ -432,14 +440,14 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Invoice Viewing / Selection ---
     fun selectInvoiceById(id: Long) {
-        viewModelScope.launch {
+        safeLaunch {
             val invoiceWithDetails = repository.getInvoiceByIdSync(id)
             _uiState.update { it.copy(selectedInvoice = invoiceWithDetails) }
         }
     }
 
     fun deleteInvoice(invoiceWithDetails: InvoiceWithDetails) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.deleteInvoice(invoiceWithDetails)
             _uiState.update { it.copy(selectedInvoice = null) }
             showMessage("Invoice ${invoiceWithDetails.invoice.invoiceNumber} deleted.")
@@ -448,13 +456,13 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Parties Management ---
     fun selectParty(party: Party) {
-        viewModelScope.launch {
+        safeLaunch {
             _uiState.update { it.copy(selectedParty = party) }
             repository.getTransactionsByParty(party.id).collect { txs ->
                 _uiState.update { it.copy(selectedPartyTransactions = txs) }
             }
         }
-        viewModelScope.launch {
+        safeLaunch {
             repository.getInvoicesByParty(party.id).collect { invs ->
                 _uiState.update { it.copy(selectedPartyInvoices = invs) }
             }
@@ -462,7 +470,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun saveParty(party: Party, onComplete: () -> Unit = {}) {
-        viewModelScope.launch {
+        safeLaunch {
             if (party.id == 0L) {
                 repository.saveParty(party.copy(currentBalance = party.openingBalance))
                 showMessage("Party '${party.name}' added successfully.")
@@ -475,7 +483,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteParty(party: Party) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.deleteParty(party)
             if (_uiState.value.selectedParty?.id == party.id) {
                 _uiState.update { it.copy(selectedParty = null) }
@@ -493,7 +501,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         referenceNo: String,
         notes: String
     ) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.recordPartyPayment(
                 partyId = partyId,
                 partyName = partyName,
@@ -509,7 +517,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun selectPartyById(partyId: Long) {
-        viewModelScope.launch {
+        safeLaunch {
             val party = _uiState.value.allParties.find { it.id == partyId }
                 ?: repository.getPartyById(partyId).firstOrNull()
             party?.let { selectParty(it) }
@@ -530,7 +538,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         notes: String,
         onSuccess: (Long) -> Unit
     ) {
-        viewModelScope.launch {
+        safeLaunch {
             // Find existing supplier party or create a new one
             val existingParty = _uiState.value.allParties.find {
                 it.name.trim().equals(supplierName.trim(), ignoreCase = true)
@@ -618,7 +626,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun updateInvoicePayment(invoiceId: Long, additionalPayment: Double, paymentMode: PaymentMode, notes: String = "") {
-        viewModelScope.launch {
+        safeLaunch {
             repository.updateInvoicePayment(invoiceId, additionalPayment, paymentMode, notes)
             _uiState.value.selectedParty?.let { selectParty(it) }
             showMessage("Payment of ₹$additionalPayment recorded.")
@@ -627,7 +635,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Inventory & Items Management ---
     fun saveItem(item: Item, onComplete: () -> Unit = {}) {
-        viewModelScope.launch {
+        safeLaunch {
             if (item.id == 0L) {
                 repository.saveItem(item)
                 showMessage("Item '${item.name}' added to inventory.")
@@ -640,7 +648,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteItem(item: Item) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.deleteItem(item)
             showMessage("Item '${item.name}' deleted.")
         }
@@ -653,7 +661,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         reason: StockTransactionType,
         notes: String
     ) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.adjustStock(itemId, itemName, adjustmentQty, reason, notes)
             showMessage("Stock adjusted for $itemName (${if (adjustmentQty >= 0) "+$adjustmentQty" else "$adjustmentQty"}).")
         }
@@ -668,7 +676,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         referenceNo: String,
         notes: String
     ) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.recordExpense(
                 PaymentTransaction(
                     partyName = title,
@@ -686,7 +694,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Business Profile ---
     fun saveBusinessProfile(profile: BusinessProfile) {
-        viewModelScope.launch {
+        safeLaunch {
             repository.saveBusinessProfile(profile)
             showMessage("Business profile updated successfully.")
         }
@@ -753,7 +761,7 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun generateRecurringInvoiceNow(profile: com.example.data.model.RecurringBillProfile) {
-        viewModelScope.launch {
+        safeLaunch {
             val nextNo = repository.generateNextInvoiceNumber(InvoiceType.SALE_INVOICE)
             val subtotal = profile.amount / 1.18
             val tax = profile.amount - subtotal
